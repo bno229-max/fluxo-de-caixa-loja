@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fluxo de Caixa - Controle Real</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; transition: all 0.3s ease; }
+        .card-shadow { shadow-sm hover:shadow-md transition-shadow duration-300; }
+        .bg-negative-row { background-color: #fff1f2 !important; border-left: 4px solid #f43f5e; }
+        input, select { transition: border-color 0.2s, box-shadow 0.2s; }
+        input:focus, select:focus { border-color: #6366f1 !important; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1); }
+        /* Scrollbar estilizada */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    </style>
+</head>
+<body class="bg-[#f8fafc] text-slate-900 p-4 md:p-10">
+
+    <div class="max-w-7xl mx-auto">
+        <header class="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+                <h1 class="text-4xl font-extrabold text-slate-900 tracking-tight">Fluxo de Caixa</h1>
+                <p class="text-slate-500 font-medium text-lg">Controle e previsibilidade real</p>
+            </div>
+            <div class="bg-white px-4 py-2 rounded-lg border border-slate-200 shadow-sm flex items-center gap-3 text-sm font-semibold text-slate-600">
+                <span class="w-2 h-2 bg-indigo-500 rounded-full animate-pulse"></span>
+                Dados salvos localmente
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-5 mb-10">
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                <p class="text-[11px] text-slate-400 font-bold uppercase tracking-wider mb-2">Receitas (Confirmadas)</p>
+                <h2 id="totalReceita" class="text-2xl font-bold text-emerald-600">R$ 0,00</h2>
+            </div>
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                <p class="text-[11px] text-slate-400 font-bold uppercase tracking-wider mb-2">Despesas (Pagas)</p>
+                <h2 id="totalDespesa" class="text-2xl font-bold text-rose-600">R$ 0,00</h2>
+            </div>
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 ring-1 ring-amber-100">
+                <p class="text-[11px] text-amber-600 font-bold uppercase tracking-wider mb-2">Total Pendente</p>
+                <h2 id="totalPendente" class="text-2xl font-bold text-amber-600">R$ 0,00</h2>
+            </div>
+            <div class="bg-indigo-600 p-5 rounded-2xl shadow-lg shadow-indigo-100 text-white">
+                <p class="text-[11px] text-indigo-200 font-bold uppercase tracking-wider mb-2">Saldo Real Líquido</p>
+                <h2 id="saldoLiquido" class="text-2xl font-bold">R$ 0,00</h2>
+            </div>
+            <div class="bg-slate-900 p-5 rounded-2xl shadow-sm text-white border-b-4 border-emerald-500">
+                <p class="text-[10px] text-slate-400 font-bold uppercase mb-1">Média Rec/Dia</p>
+                <h2 id="avgReceita" class="text-xl font-bold text-emerald-400">R$ 0,00</h2>
+            </div>
+            <div class="bg-slate-900 p-5 rounded-2xl shadow-sm text-white border-b-4 border-rose-500">
+                <p class="text-[10px] text-slate-400 font-bold uppercase mb-1">Média Desp/Dia</p>
+                <h2 id="avgDespesa" class="text-xl font-bold text-rose-400">R$ 0,00</h2>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            <div class="lg:col-span-1 bg-white p-8 rounded-2xl shadow-sm border border-slate-200 h-fit sticky top-10">
+                <h3 id="formTitle" class="text-xl font-bold mb-6 text-slate-800">Lançamentos</h3>
+                <form id="cashFlowForm" class="space-y-5">
+                    <input type="hidden" id="editId">
+                    <div>
+                        <label class="block text-xs font-bold mb-1.5 uppercase text-slate-500 tracking-wide">Data de Vencimento</label>
+                        <input type="date" id="date" required class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold mb-1.5 uppercase text-slate-500 tracking-wide">Descrição</label>
+                        <input type="text" id="description" placeholder="Ex: Fornecedor de Vinho..." required class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold mb-1.5 uppercase text-slate-500 tracking-wide">Valor (R$)</label>
+                        <input type="number" id="value" step="0.01" required class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none font-semibold text-lg">
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold mb-1.5 uppercase text-slate-500 tracking-wide">Tipo</label>
+                            <select id="type" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-sm">
+                                <option value="receita">RECEITA</option>
+                                <option value="despesa">DESPESA</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold mb-1.5 uppercase text-slate-500 tracking-wide">Status</label>
+                            <select id="status" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                                <option value="pendente">Pendente</option>
+                                <option value="confirmado">Confirmado</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold mb-1.5 uppercase text-slate-500 tracking-wide">Categoria</label>
+                        <select id="category" required class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                            <option value="Boleto">Boleto</option>
+                            <option value="Custo Fixo">Custo Fixo</option>
+                            <option value="Outras Receitas">Outras Receitas</option>
+                            <option value="Outras Despesas">Outras Despesas</option>
+                        </select>
+                    </div>
+                    <button type="submit" id="btnSubmit" class="w-full bg-indigo-600 text-white font-bold py-4 rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 active:scale-95">Salvar Lançamento</button>
+                    <button type="button" id="btnCancel" class="hidden w-full bg-slate-100 text-slate-600 font-bold py-2 rounded-xl mt-2 text-sm">Cancelar Edição</button>
+                </form>
+            </div>
+
+            <div class="lg:col-span-3 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="bg-slate-50 text-slate-400 border-b border-slate-100">
+                            <tr>
+                                <th class="p-5 text-[10px] uppercase font-extrabold tracking-widest">Vencimento</th>
+                                <th class="p-5 text-[10px] uppercase font-extrabold tracking-widest">Descrição / Categoria</th>
+                                <th class="p-5 text-[10px] uppercase font-extrabold tracking-widest text-right">Valor</th>
+                                <th class="p-5 text-[10px] uppercase font-extrabold tracking-widest text-center">Status</th>
+                                <th class="p-5 text-[10px] uppercase font-extrabold tracking-widest text-right">Saldo Projetado</th>
+                                <th class="p-5 text-[10px] uppercase font-extrabold tracking-widest text-center">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody" class="divide-y divide-slate-50">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // CARREGAR DADOS DO COMPUTADOR AO INICIAR
+        let entries = JSON.parse(localStorage.getItem('fluxo_caixa_data')) || [];
+        
+        const totalDaysInMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
+        const form = document.getElementById('cashFlowForm');
+        const tableBody = document.getElementById('tableBody');
+
+        form.onsubmit = (e) => {
+            e.preventDefault();
+            const id = document.getElementById('editId').value;
+            const entry = {
+                id: id ? parseFloat(id) : Date.now(),
+                date: document.getElementById('date').value,
+                description: document.getElementById('description').value,
+                value: parseFloat(document.getElementById('value').value),
+                type: document.getElementById('type').value,
+                status: document.getElementById('status').value,
+                category: document.getElementById('category').value
+            };
+
+            if (id) {
+                entries = entries.map(en => en.id === entry.id ? entry : en);
+            } else {
+                entries.push(entry);
+            }
+            
+            saveData();
+            resetForm();
+            render();
+        };
+
+        function saveData() {
+            localStorage.setItem('fluxo_caixa_data', JSON.stringify(entries));
+        }
+
+        function render() {
+            entries.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+            let runningBalance = 0;
+            let totalRecConfirmada = 0;
+            let totalDespConfirmada = 0;
+            let totalPendente = 0;
+            
+            tableBody.innerHTML = '';
+
+            entries.forEach(en => {
+                const impact = en.type === 'receita' ? en.value : -en.value;
+                runningBalance += impact;
+
+                if (en.status === 'confirmado') {
+                    if (en.type === 'receita') totalRecConfirmada += en.value;
+                    else totalDespConfirmada += en.value;
+                } else {
+                    totalPendente += impact;
+                }
+
+                const row = document.createElement('tr');
+                row.className = "hover:bg-slate-50/50 transition-colors duration-200";
+                if (runningBalance < 0) row.classList.add('bg-negative-row');
+                
+                const statusBtn = en.status === 'pendente' 
+                    ? `<button onclick="toggleStatus(${en.id})" class="text-[10px] bg-amber-50 text-amber-600 border border-amber-200 px-3 py-1 rounded-full font-bold uppercase hover:bg-amber-100 transition-all">Pendente</button>`
+                    : `<span class="text-[10px] bg-emerald-50 text-emerald-600 border border-emerald-100 px-3 py-1 rounded-full font-bold uppercase">Confirmado</span>`;
+
+                row.innerHTML = `
+                    <td class="p-5 text-sm text-slate-500">${new Date(en.date).toLocaleDateString('pt-BR', {timeZone: 'UTC'})}</td>
+                    <td class="p-5">
+                        <div class="font-bold text-slate-800 text-base">${en.description}</div>
+                        <div class="text-[10px] text-slate-400 font-bold uppercase tracking-tight">${en.category}</div>
+                    </td>
+                    <td class="p-5 text-right font-bold text-base ${en.type === 'receita' ? 'text-emerald-600' : 'text-rose-600'}">
+                        ${en.type === 'receita' ? '+' : '-'} ${formatMoney(en.value)}
+                    </td>
+                    <td class="p-5 text-center">${statusBtn}</td>
+                    <td class="p-5 text-right font-bold text-slate-700 text-base">${formatMoney(runningBalance)}</td>
+                    <td class="p-5 text-center">
+                        <button onclick="editEntry(${en.id})" class="text-indigo-600 font-bold text-xs hover:underline mx-2 italic">Editar</button>
+                        <button onclick="deleteEntry(${en.id})" class="text-rose-400 font-bold text-xs hover:underline mx-2">Excluir</button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+
+            document.getElementById('totalReceita').innerText = formatMoney(totalRecConfirmada);
+            document.getElementById('totalDespesa').innerText = formatMoney(totalDespConfirmada);
+            document.getElementById('totalPendente').innerText = formatMoney(totalPendente);
+            document.getElementById('saldoLiquido').innerText = formatMoney(totalRecConfirmada - totalDespConfirmada);
+            document.getElementById('avgReceita').innerText = formatMoney(totalRecConfirmada / totalDaysInMonth);
+            document.getElementById('avgDespesa').innerText = formatMoney(totalDespConfirmada / totalDaysInMonth);
+        }
+
+        window.toggleStatus = (id) => {
+            const en = entries.find(e => e.id === id);
+            en.status = 'confirmado';
+            saveData();
+            render();
+        };
+
+        function formatMoney(v) {
+            return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
+        }
+
+        window.deleteEntry = (id) => {
+            if(confirm("Deseja apagar este registro permanentemente?")) {
+                entries = entries.filter(en => en.id !== id);
+                saveData();
+                render();
+            }
+        };
+
+        window.editEntry = (id) => {
+            const en = entries.find(e => e.id === id);
+            document.getElementById('editId').value = en.id;
+            document.getElementById('date').value = en.date;
+            document.getElementById('description').value = en.description;
+            document.getElementById('value').value = en.value;
+            document.getElementById('type').value = en.type;
+            document.getElementById('status').value = en.status;
+            document.getElementById('category').value = en.category;
+            document.getElementById('formTitle').innerText = "✏️ Editando...";
+            document.getElementById('btnSubmit').innerText = "Atualizar";
+            document.getElementById('btnCancel').classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+
+        document.getElementById('btnCancel').onclick = resetForm;
+
+        function resetForm() {
+            form.reset();
+            document.getElementById('editId').value = '';
+            document.getElementById('formTitle').innerText = "Lançamentos";
+            document.getElementById('btnSubmit').innerText = "Salvar Lançamento";
+            document.getElementById('btnCancel').classList.add('hidden');
+        }
+
+        // Renderização inicial com os dados carregados do LocalStorage
+        render();
+    </script>
+</body>
+</html>
